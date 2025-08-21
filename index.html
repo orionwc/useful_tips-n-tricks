@@ -221,11 +221,14 @@
   }
 
   // --- Access check ---
-  async function isAllowedUser(email) {
-    const ref = doc(db, "allowedUsers", email);
-    const snapshot = await getDoc(ref);
-    return snapshot.exists();
-  }
+  import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+async function isAllowedUser(email) {
+  const q = query(collection(db, "allowedUsers"), where("email", "==", email));
+  const snapshot = await getDocs(q);
+  return !snapshot.empty;
+}
+
 
   // --- Load notes ---
   async function loadNotes(uid) {
@@ -887,6 +890,7 @@
 </body>
 
 </html>
+
 
 
 
