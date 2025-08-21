@@ -171,138 +171,147 @@
     </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } 
-  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } 
-  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import {
+    getFirestore, doc, getDoc, setDoc,
+    collection, query, where, getDocs
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  import {
+    getAuth, signInWithPopup, GoogleAuthProvider,
+    onAuthStateChanged, signOut, setPersistence, browserLocalPersistence
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-// --- Firebase Config ---
-const firebaseConfig = {
-  apiKey: "YOUR_KEY",
-  authDomain: "YOUR_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_BUCKET",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
-};
+  // --- Firebase Config ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyCovRNuHkX8UwRvDx6cqbCHBbEuaowuwtI",
+    authDomain: "the36files.firebaseapp.com",
+    projectId: "the36files",
+    storageBucket: "the36files.firebasestorage.app",
+    messagingSenderId: "459589657087",
+    appId: "1:459589657087:web:8b4a410b1b59e48cc4c7ca",
+    measurementId: "G-SEMG9162V4"
+  };
 
-// --- Init Firebase ---
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
+  // --- Init Firebase ---
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
 
-let currentUserId = null;
+  // --- DOM Elements ---
+  const signinBtn   = document.getElementById("signin");
+  const signoutBtn  = document.getElementById("signout");
+  const secretLair  = document.getElementById("secret");
+  const notesArea   = document.getElementById("notesArea");
+  const saveStatus  = document.getElementById("saveStatus");
+  const saveBtn     = document.getElementById("saveBtn");
 
-// --- Core functions ---
-function hideSecret() {
-  document.getElementById("secret").style.display = "none";
-  const signinButton = document.getElementById("signin");
-  if (signinButton) signinButton.style.display = "block";
-  const notesArea = document.getElementById("notesArea");
-  if (notesArea) notesArea.value = "";
-}
+  let currentUserId = null;
 
-function handleSignedInUser(user) {
-  const signinButton = document.getElementById("signin");
-  const secretLair = document.getElementById("secret");
-  const saveStatus = document.getElementById("saveStatus");
-  if (signinButton) signinButton.style.display = "none";
-  if (secretLair) secretLair.style.display = "block";
-  if (saveStatus) saveStatus.textContent = `✅ Welcome, ${user.displayName}`;
-  loadNotes(user.uid);
-}
-
-async function isAllowedUser(email) {
-  const q = query(collection(db, "allowedUsers"), where("email", "==", email));
-  const snapshot = await getDocs(q);
-  return !snapshot.empty;
-}
-
-async function loadNotes(uid) {
-  currentUserId = uid;
-  const noteRef = doc(db, "users", uid);
-  const snap = await getDoc(noteRef);
-  const notesArea = document.getElementById("notesArea");
-  if (notesArea) notesArea.value = snap.exists() ? (snap.data().notes || "") : "";
-}
-
-async function saveNotes() {
-  const saveStatus = document.getElementById("saveStatus");
-  if (!currentUserId) {
-    if (saveStatus) saveStatus.textContent = "⚠️ Sign in first";
-    return;
+  // --- UI Helpers ---
+  function hideSecret() {
+    secretLair.style.display = "none";
+    if (signinBtn) signinBtn.style.display = "block";
+    notesArea.value = "";
+    document.querySelectorAll(".game-container").forEach(div => div.style.display = "none");
   }
-  try {
-    await setDoc(doc(db, "users", currentUserId), {
-      notes: document.getElementById("notesArea").value,
-      timestamp: Date.now()
-    });
-    if (saveStatus) {
-      saveStatus.textContent = "✅ Notes saved!";
-      setTimeout(() => (saveStatus.textContent = ""), 2000);
+
+  function showSecretFor(user) {
+    if (signinBtn) signinBtn.style.display = "none";
+    secretLair.style.display = "block";
+    save = `✅ Welcome, ${user.displayName}`;
+    loadNotesStatus.textContent(user.uid);
+  }
+
+(message, color = "") {
+    saveStatus  function setStatus.textContent = message saveStatus.style;
+    if (color).color = color;
+  }
+
+  // --- Firestore Helpers ---
+  async function isAllowedUser(email) {
+    const q = query(collection"), where("email(db, "allowedUsers", "==", email));
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
+  }
+
+  async function loadNotes(uid) {
+    currentUserId = uid;
+    const snap = await getDoc(doc(db, "users", uid));
+    notesArea.value = snap.exists() ? (snap.data().notes || "") : "";
+  }
+
+  async function saveNotes() {
+    if (!currentUserId) {
+      setStatus("⚠️ Sign in first", "orange");
+      return;
     }
-  } catch (err) {
-    console.error("Save error:", err);
-    if (saveStatus) saveStatus.textContent = "❌ Save failed";
+    try {
+      await setDoc(doc(db, "users", currentUserId), {
+        notes: notesArea.value,
+        timestamp: Date.now()
+      });
+      setStatus("✅ Notes saved!", "lightgreen");
+      setTimeout(() => setStatus(""), 2000);
+    } catch (err) {
+      console.error("Save error:", err);
+      setStatus("❌ Save failed", "red");
+    }
   }
-}
 
-async function signInAndLoadNotes() {
-  const saveStatus = document.getElementById("saveStatus");
-  try {
-    await setPersistence(auth, browserLocalPersistence);
-    const result = await signInWithPopup(auth, provider);
-    const email = result.user?.email || "";
-    if (await isAllowedUser(email)) {
-      handleSignedInUser(result.user);
-    } else {
-      if (saveStatus) saveStatus.textContent = "❌ Access denied";
+  // --- Auth Actions ---
+  async function signInAndLoadNotes() {
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+      const resultPopup(auth, provider = await signInWith);
+      const emailemail || "";
+
+      = result.user?. if (await isAllowedUser(email)) {
+        showSecretFor(result.user);
+      } else {
+        setStatus("❌ Access denied", "red");
+        hideSecret();
+        await signOut(auth);
+      }
+    } catch (err) {
+      console.error("Sign-in error:", err);
+      setStatus("❌ Sign-in failed", "red");
       hideSecret();
-      await signOut(auth);
     }
-  } catch (err) {
-    console.error("Sign-in error:", err);
-    if (saveStatus) saveStatus.textContent = "❌ Sign-in failed";
-    hideSecret();
   }
-}
 
-async function signOutUser() {
-  const saveStatus = document.getElementById("saveStatus");
-  try {
-    await signOut(auth);
-    hideSecret();
-    if (saveStatus) saveStatus.textContent = "👋 Signed out";
-  } catch (err) {
-    console.error("Sign-out error:", err);
-    if (saveStatus) saveStatus.textContent = "❌ Sign-out failed";
+  async function signOutUser() {
+    try {
+      await signOut(auth);
+      hideSecret();
+      setStatus("👋 Signed out", "gray");
+    } catch (err) {
+      console.error("Sign-out error:", err);
+      setStatus("❌ Sign-out failed", "red");
+    }
   }
-}
 
-// --- Auth state change ---
-onAuthStateChanged(auth, async (user) => {
-  const email = user?.email || "";
-  if (user && await isAllowedUser(email)) {
-    handleSignedInUser(user);
-  } else {
-    hideSecret();
-  }
-});
+  // --- Auth State Listener ---
+  onAuthStateChanged(auth, async (user email = user?.email || "";
+    if (user && await isAllowedUser(email)) {
+      showSecretFor(user);
+    } else {
+      hideSecret();
+    }
+  });
 
-// --- Wait for DOM before binding ---
-document.addEventListener("DOMContentLoaded", () => {
-  const signinButton = document.getElementById("signin");
-  const signoutButton = document.getElementById("signout");
-  if (signinButton) signinButton.addEventListener("click", signInAndLoadNotes);
-  if (signoutButton) signoutButton.addEventListener("click", signOutUser);
-});
+  // --- Event Listeners ---
+  document.addEventListener("DOMContentLoaded", () => {
+    if (signinBtn)  signinBtn.addEventListener("click", signInAndLoadNotes);
+   ) => {
+    const if (signoutBtn) signoutBtn.addEventListener("click", signOutUser);
+    if (saveBtn)    saveBtn.addEventListener("click", saveNotes);
+  });
 
-// --- Expose for inline HTML ---
-window.saveNotes = saveNotes;
-window.signOutUser = signOutUser;
+  // --- Expose for inline HTML ---
+  window.saveNotes   = saveNotes;
+  window.hideSecret  = hideSecret;
+  window.signOutUser = signOutUser;
 </script><script>
 
     //////////////////////////
@@ -869,6 +878,7 @@ window.signOutUser = signOutUser;
 </body>
 
 </html>
+
 
 
 
