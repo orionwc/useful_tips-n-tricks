@@ -238,6 +238,7 @@
     } catch (err) {
       console.error("Save error:", err);
       saveStatus.textContent = "❌ Save failed";
+      hideSecret()
     }
   }
 
@@ -851,3 +852,4 @@
 </body>
 
 </html>
+
