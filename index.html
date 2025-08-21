@@ -169,7 +169,17 @@
       <p id="saveStatus" style="color:lightgreen; margin-top:0.5rem;"></p>
     </div>
   </div>
+<button id="signin">Sign In with Google</button>
+
+<div id="secret" style="display: none;">
+  <p id="saveStatus"></p>
+  <textarea id="notesArea" placeholder="Type your notes here..."></textarea>
+  <br>
+  <button onclick="saveNotes()">Save Notes</button>
+  <button id="signout">Sign Out</button>
+</div>
 <script type="module">
+  <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import {
     getFirestore,
@@ -187,7 +197,7 @@
     browserLocalPersistence
   } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-  // --- 1. Firebase Config ---
+  // --- Firebase Config ---
   const firebaseConfig = {
     apiKey: "AIzaSyCovRNuHkX8UwRvDx6cqbCHBbEuaowuwtI",
     authDomain: "the36files.firebaseapp.com",
@@ -198,41 +208,42 @@
     measurementId: "G-SEMG9162V4"
   };
 
-  // --- 2. Initialize Firebase ---
+  // --- Initialize Firebase ---
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
 
-  // --- 3. DOM Elements ---
+  // --- DOM Elements ---
   const signinButton = document.getElementById("signin");
+  const signoutButton = document.getElementById("signout");
   const secretLair = document.getElementById("secret");
   const notesArea = document.getElementById("notesArea");
   const saveStatus = document.getElementById("saveStatus");
   let currentUserId = null;
 
-  // --- 4. UI Helpers ---
+  // --- UI Helpers ---
   function hideSecret() {
     secretLair.style.display = "none";
-    if (signinButton) signinButton.style.display = "block";
+    signinButton.style.display = "block";
     notesArea.value = "";
   }
 
   function handleSignedInUser(user) {
-    if (signinButton) signinButton.style.display = "none";
+    signinButton.style.display = "none";
     secretLair.style.display = "block";
     saveStatus.textContent = `✅ Welcome, ${user.displayName}`;
     loadNotes(user.uid);
   }
 
-  // --- 5. Firestore Access Check ---
+  // --- Firestore Access Check ---
   async function isAllowedUser(email) {
     const ref = doc(db, "allowedUsers", email);
     const snapshot = await getDoc(ref);
     return snapshot.exists();
   }
 
-  // --- 6. Load Notes ---
+  // --- Load Notes ---
   async function loadNotes(uid) {
     currentUserId = uid;
     const noteRef = doc(db, "users", uid);
@@ -240,7 +251,7 @@
     notesArea.value = snap.exists() ? (snap.data().notes || "") : "";
   }
 
-  // --- 7. Save Notes ---
+  // --- Save Notes ---
   async function saveNotes() {
     if (!currentUserId) {
       saveStatus.textContent = "⚠️ Sign in first";
@@ -251,7 +262,7 @@
         notes: notesArea.value,
         timestamp: Date.now()
       });
-      saveStatus.textContent = "✅ Notes saved to cloud!";
+      saveStatus.textContent = "✅ Notes saved!";
       setTimeout(() => (saveStatus.textContent = ""), 2000);
     } catch (err) {
       console.error("Save error:", err);
@@ -259,7 +270,7 @@
     }
   }
 
-  // --- 8. Sign-In Flow ---
+  // --- Sign-In Flow ---
   async function signInAndLoadNotes() {
     try {
       await setPersistence(auth, browserLocalPersistence);
@@ -269,7 +280,6 @@
       if (await isAllowedUser(email)) {
         handleSignedInUser(result.user);
       } else {
-        console.warn("Access denied for:", email);
         saveStatus.textContent = "❌ Access denied";
         hideSecret();
         await signOut(auth);
@@ -281,7 +291,19 @@
     }
   }
 
-  // --- 9. Auto-Login on Page Load ---
+  // --- Sign-Out Flow ---
+  async function signOutUser() {
+    try {
+      await signOut(auth);
+      hideSecret();
+      saveStatus.textContent = "👋 Signed out";
+    } catch (err) {
+      console.error("Sign-out error:", err);
+      saveStatus.textContent = "❌ Sign-out failed";
+    }
+  }
+
+  // --- Auto-Login ---
   onAuthStateChanged(auth, async (user) => {
     const email = user?.email || "";
     if (user && await isAllowedUser(email)) {
@@ -292,12 +314,11 @@
     }
   });
 
-  // --- 10. Hook Up Sign-In Button ---
-  if (signinButton) {
-    signinButton.addEventListener("click", signInAndLoadNotes);
-  }
+  // --- Button Hooks ---
+  signinButton.addEventListener("click", signInAndLoadNotes);
+  signoutButton.addEventListener("click", signOutUser);
 
-  // --- 11. Expose Save Notes Globally ---
+  // --- Expose Save Globally ---
   window.saveNotes = saveNotes;
 </script><script>
     // Keep this function name for unlocking the Secret Lair
@@ -883,6 +904,7 @@
 </body>
 
 </html>
+
 
 
 
