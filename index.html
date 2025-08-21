@@ -115,10 +115,11 @@
   <div id="secret">
     <button class="close-btn" onclick="hideSecret()">✕ Close Secret Lair</button>
     <h2>🎮 Secret Lair Unlocked!</h2>
-    <p>Choose your challenge:</p>
+    <p>Choose:</p>
     <button class="game-button" onclick="showGame('ticTacToe')">Tic-Tac-Toe</button>
     <button class="game-button" onclick="showGame('snake')">Snake Game</button>
     <button class="game-button" onclick="showGame('facade')">Site Facade</button>
+    <button id="signin" class="game-button">Sign In with Google</button>
 
     <!-- Tic-Tac-Toe -->
 <div id="ticTacToe" class="game-container">
@@ -135,7 +136,6 @@
       <p id="scoreBoard">Score: 0</p>
       <button class="game-button" onclick="startSnake()">Restart Snake</button>
     </div>
-<button id="signin">Sign In with Google</button>
 </script>
     <!-- Site Facade -->
     <div id="facade" class="game-container">
@@ -897,6 +897,7 @@
 </body>
 
 </html>
+
 
 
 
