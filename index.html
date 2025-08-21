@@ -159,7 +159,17 @@
         <span id="facadeStatus" style="margin-left:0.5rem; color:#9be79b;"></span>
       </div>
     </div>
+<!-- Sign In button (shows when logged out) -->
+<button id="signin">Sign In with Google</button>
 
+<!-- Secret lair (shows when logged in) -->
+<div id="secret" style="display:none;">
+  <p id="saveStatus"></p>
+  <textarea id="notesArea" placeholder="Type your notes here..."></textarea>
+  <br>
+  <button onclick="saveNotes()">Save Notes</button>
+  <button id="signout">Sign Out</button>
+</div>
     <!-- Secret Notes Section -->
     <div id="secretNotes" style="margin-top: 2rem;">
       <h3>📝 Your Secret Notes</h3>
@@ -886,6 +896,7 @@
 </body>
 
 </html>
+
 
 
 
