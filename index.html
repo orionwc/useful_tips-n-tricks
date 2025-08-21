@@ -119,7 +119,6 @@
     <button class="game-button" onclick="showGame('ticTacToe')">Tic-Tac-Toe</button>
     <button class="game-button" onclick="showGame('snake')">Snake Game</button>
     <button class="game-button" onclick="showGame('facade')">Site Facade</button>
-    <button id="signin" class="game-button">Sign In with Google</button>
 
     <!-- Tic-Tac-Toe -->
 <div id="ticTacToe" class="game-container">
@@ -172,22 +171,13 @@
   </div>
 </div>
 <script type="module">
-  <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import {
-    getFirestore,
-    doc,
-    getDoc,
-    setDoc
+    getFirestore, doc, getDoc, setDoc
   } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
   import {
-    getAuth,
-    signInWithPopup,
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    signOut,
-    setPersistence,
-    browserLocalPersistence
+    getAuth, signInWithPopup, GoogleAuthProvider,
+    onAuthStateChanged, signOut, setPersistence, browserLocalPersistence
   } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
   // --- Firebase Config ---
@@ -201,13 +191,13 @@
     measurementId: "G-SEMG9162V4"
   };
 
-  // --- Initialize Firebase ---
+  // --- Init Firebase ---
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
 
-  // --- DOM Elements ---
+  // --- DOM refs ---
   const signinButton = document.getElementById("signin");
   const signoutButton = document.getElementById("signout");
   const secretLair = document.getElementById("secret");
@@ -229,14 +219,14 @@
     loadNotes(user.uid);
   }
 
-  // --- Firestore Access Check ---
+  // --- Access check ---
   async function isAllowedUser(email) {
     const ref = doc(db, "allowedUsers", email);
     const snapshot = await getDoc(ref);
     return snapshot.exists();
   }
 
-  // --- Load Notes ---
+  // --- Load notes ---
   async function loadNotes(uid) {
     currentUserId = uid;
     const noteRef = doc(db, "users", uid);
@@ -244,7 +234,7 @@
     notesArea.value = snap.exists() ? (snap.data().notes || "") : "";
   }
 
-  // --- Save Notes ---
+  // --- Save notes ---
   async function saveNotes() {
     if (!currentUserId) {
       saveStatus.textContent = "⚠️ Sign in first";
@@ -263,7 +253,7 @@
     }
   }
 
-  // --- Sign-In Flow ---
+  // --- Sign in ---
   async function signInAndLoadNotes() {
     try {
       await setPersistence(auth, browserLocalPersistence);
@@ -284,7 +274,7 @@
     }
   }
 
-  // --- Sign-Out Flow ---
+  // --- Sign out ---
   async function signOutUser() {
     try {
       await signOut(auth);
@@ -296,22 +286,21 @@
     }
   }
 
-  // --- Auto-Login ---
+  // --- Auth state change ---
   onAuthStateChanged(auth, async (user) => {
     const email = user?.email || "";
     if (user && await isAllowedUser(email)) {
       handleSignedInUser(user);
     } else {
       hideSecret();
-      await signOut(auth);
     }
   });
 
-  // --- Button Hooks ---
+  // --- Hook up buttons ---
   signinButton.addEventListener("click", signInAndLoadNotes);
   signoutButton.addEventListener("click", signOutUser);
 
-  // --- Expose Save Globally ---
+  // --- Make saveNotes callable from HTML ---
   window.saveNotes = saveNotes;
 </script><script>
     // Keep this function name for unlocking the Secret Lair
