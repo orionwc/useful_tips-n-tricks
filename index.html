@@ -170,100 +170,49 @@
     </div>
   </div>
 <script type="module">
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-  import { initializeApp } from "firebase/app";
-import {
-  getAuth,
-  signInWithPopup,
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  signOut,
-  setPersistence,
-  browserLocalPersistence
-} from "firebase/auth";
-import {
-  getFirestore,
-  getDoc,
-  doc
-} from "firebase/firestore";
+  import { 
+    getAuth, 
+    signInWithPopup, 
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-// Firebase config
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+  // --- 1. Config: declare ONCE ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyCovRNuHkX8UwRvDx6cqbCHBbEuaowuwtI",
+    authDomain: "the36files.firebaseapp.com", // <-- corrected to match Firebase default pattern
+    projectId: "the36files",
+    storageBucket: "the36files.firebasestorage.app",
+    messagingSenderId: "459589657087",
+    appId: "1:459589657087:web:8b4a410b1b59e48cc4c7ca",
+    measurementId: "G-SEMG9162V4"
+  };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
+  // --- 2. Initialise Firebase services ---
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
 
-// DOM elements
-const signinButton = document.getElementById("signin");
-const saveStatus = document.getElementById("saveStatus");
-const secretLair = document.getElementById("secret");
+  // --- 3. Cached DOM refs ---
+  const notesArea = document.getElementById("notesArea");
+  const saveStatus = document.getElementById("saveStatus");
+  let currentUserId = null;
 
-// Hide lair by default
-function hideSecret() {
-  secretLair.style.display = "none";
-  signinButton.style.display = "block";
-}
-
-// Show lair for approved users
-function handleSignedInUser(user) {
-  signinButton.style.display = "none";
-  secretLair.style.display = "block";
-  saveStatus.textContent = `✅ Welcome, ${user.displayName}`;
-}
-
-// Check Firestore for access approval
-async function isAllowedUser(email) {
-  const ref = doc(db, "allowedUsers", email);
-  const snapshot = await getDoc(ref);
-  return snapshot.exists();
-}
-
-// Sign-in flow
-async function signInAndLoadNotes() {
-  try {
-    await setPersistence(auth, browserLocalPersistence);
-    const result = await signInWithPopup(auth, provider);
-    const email = result.user?.email || "";
-
-    if (await isAllowedUser(email)) {
+  // --- 4. Sign in + load cloud notes ---
+  async function signInAndLoadNotes() {
+    try {
+      const result = await signInWithPopup(auth, provider);
       handleSignedInUser(result.user);
-    } else {
-      console.warn("Access denied for:", email);
-      saveStatus.textContent = "❌ Access denied";
-      hideSecret();
-      await signOut(auth);
+    } catch (err) {
+      console.error("Sign-in or load error:", err);
+      saveStatus.textContent = "❌ Sign-in failed";
+      hideSecret()
     }
-  } catch (err) {
-    console.error("Sign-in error:", err);
-    saveStatus.textContent = "❌ Sign-in failed";
-    hideSecret();
   }
-}
-
-// Auto-login handler
-onAuthStateChanged(auth, async (user) => {
-  const email = user?.email || "";
-
-  if (user && await isAllowedUser(email)) {
-    handleSignedInUser(user);
-  } else {
-    hideSecret();
-    await signOut(auth);
-  }
-});
-
-// Hook up sign-in button
-signinButton.addEventListener("click", signInAndLoadNotes);
 </script>
 <script>
     // Keep this function name for unlocking the Secret Lair
@@ -849,6 +798,7 @@ signinButton.addEventListener("click", signInAndLoadNotes);
 </body>
 
 </html>
+
 
 
 
