@@ -111,14 +111,25 @@
   </style>
 </head>
 <body>
-  <!-- SECRET LAIR -->
-  <div id="secret">
-    <button class="close-btn" onclick="hideSecret()">✕ Close Secret Lair</button>
-    <h2>🎮 Secret Lair Unlocked!</h2>
-    <p>Choose:</p>
-    <button class="game-button" onclick="showGame('ticTacToe')">Tic-Tac-Toe</button>
-    <button class="game-button" onclick="showGame('snake')">Snake Game</button>
-    <button class="game-button" onclick="showGame('facade')">Site Facade</button>
+<!-- Secret lair (shows when logged in) -->
+<div id="secret" style="display:none;">
+  <button class="close-btn" onclick="hideSecret()">✕ Close Secret Lair</button>
+  <h2>🎮 Secret Lair Unlocked!</h2>
+  <p>Choose:</p>
+  <button class="game-button" onclick="showGame('ticTacToe')">Tic-Tac-Toe</button>
+  <button class="game-button" onclick="showGame('snake')">Snake Game</button>
+  <button class="game-button" onclick="showGame('facade')">Site Facade</button>
+
+  <!-- Game containers... -->
+
+  <!-- Notes Section -->
+  <h3>📝 Your Secret Notes</h3>
+  <textarea id="notesArea" rows="6" style="width:100%; padding:1rem; font-size:1rem;" placeholder="Type your notes here..."></textarea>
+  <br>
+  <button class="game-button" onclick="saveNotes()">Save Notes</button>
+  <button id="signout" class="game-button" style="background:#777;">Sign Out</button>
+  <p id="saveStatus" style="color:lightgreen; margin-top:0.5rem;"></p>
+</div>
 
     <!-- Tic-Tac-Toe -->
 <div id="ticTacToe" class="game-container">
@@ -159,27 +170,7 @@
         <span id="facadeStatus" style="margin-left:0.5rem; color:#9be79b;"></span>
       </div>
     </div>
-<!-- Sign In button (shows when logged out) -->
-<button id="signin">Sign In with Google</button>
 
-<!-- Secret lair (shows when logged in) -->
-<div id="secret" style="display:none;">
-  <p id="saveStatus"></p>
-  <textarea id="notesArea" placeholder="Type your notes here..."></textarea>
-  <br>
-  <button onclick="saveNotes()">Save Notes</button>
-  <button id="signout">Sign Out</button>
-</div>
-    <!-- Secret Notes Section -->
-    <div id="secretNotes" style="margin-top: 2rem;">
-      <h3>📝 Your Secret Notes</h3>
-      <textarea id="notesArea" rows="6" style="width:100%; padding:1rem; font-size:1rem;"></textarea>
-      <br>
-      <button class="game-button" onclick="saveNotes()">Save Notes</button>
-      <p id="saveStatus" style="color:lightgreen; margin-top:0.5rem;"></p>
-    </div>
-  </div>
-</div>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import {
