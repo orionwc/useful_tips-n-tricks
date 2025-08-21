@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fun and Useful Info</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+      color: #333;
+    }
+    header {
+      background: #4CAF50;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    main {
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+    }
+    /* Secret lair styles */
+    #secret {
+      display: none;
+      background: #222;
+      color: #eee;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      padding: 2rem;
+      overflow: auto;
+      z-index: 999;
+    }
+    #secret h2 {
+      margin-top: 0;
+    }
+    .game-button {
+      background: #4CAF50;
+      border: none;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      margin: 0.5rem;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .game-container {
+      display: none;
+      margin-top: 1rem;
+    }
+    /* Tic-Tac-Toe grid */
+      #board {
+  display: grid;
+  grid-template-columns: repeat(3, 100px);
+  grid-template-rows: repeat(3, 100px);
+  gap: 5px;
+  margin-top: 1rem;
+}
+    .cell {
+      background: #fff;
+      border: 2px solid #333;
+      font-size: 2rem;
+      text-align: center;
+      line-height: 100px;
+      cursor: pointer;
+    }
+    /* Snake canvas */
+    #snakeCanvas {
+      background: #000;
+      display: block;
+      margin: 1rem auto;
+    }
+    #scoreBoard {
+      color: #fff;
+      font-size: 1.2rem;
+      text-align: center;
+    }
+    .close-btn {
+      background: #f44336;
+      float: right;
+      color: #fff;
+      border: none;
+      padding: 0.5rem;
+      cursor: pointer;
+    }
+
+    /* New: alt theme toggle via "style" */
+    html.alt-theme { filter: invert(1) hue-rotate(180deg); }
+
+    /* New: floating immortality UI (via "orion") */
+    .secret-immortal-ui {
+      position: fixed; right: 16px; bottom: 16px; z-index: 2147483647;
+      display: flex; gap: 8px; align-items: center; padding: 8px 10px;
+      background: rgba(20,20,25,0.92); color: #fff; border-radius: 10px;
+      box-shadow: 0 6px 22px rgba(0,0,0,0.35); font: 14px/1.2 system-ui, sans-serif;
+    }
+    .secret-immortal-ui button {
+      background: #2d72d2; color: #fff; border: 0; border-radius: 8px; padding: 6px 10px; cursor: pointer;
+    }
+    .secret-immortal-ui button.secondary { background: #444; }
+
+    /* New: toasts */
+    .secret-toast {
+      position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%);
+      background: rgba(0,0,0,0.85); color: #fff; padding: 10px 14px; border-radius: 10px;
+      font: 14px/1.2 system-ui, sans-serif; z-index: 2147483647; opacity: 0; transition: opacity .2s, transform .2s;
+    }
+    .secret-toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+  </style>
+</head>
+<body>
+  <!-- SECRET LAIR -->
+  <div id="secret">
+    <button class="close-btn" onclick="hideSecret()">✕ Close Secret Lair</button>
+    <h2>🎮 Secret Lair Unlocked!</h2>
+    <p>Choose your challenge:</p>
+    <button class="game-button" onclick="showGame('ticTacToe')">Tic-Tac-Toe</button>
+    <button class="game-button" onclick="showGame('snake')">Snake Game</button>
+    <button class="game-button" onclick="showGame('facade')">Site Facade</button>
+
+    <!-- Tic-Tac-Toe -->
+<div id="ticTacToe" class="game-container">
+  <h3>Tic-Tac-Toe</h3>
+  <div id="board"></div>
+  <p id="tttMessage"></p>
+  <button class="game-button" onclick="resetTicTacToe()">Restart</button>
+</div>
+
+    <!-- Snake -->
+    <div id="snake" class="game-container">
+      <h3>Snake</h3>
+      <canvas id="snakeCanvas" width="400" height="400"></canvas>
+      <p id="scoreBoard">Score: 0</p>
+      <button class="game-button" onclick="startSnake()">Restart Snake</button>
+    </div>
+</script>
+    <!-- Site Facade -->
+    <div id="facade" class="game-container">
+      <h3>Site Facade</h3>
+      <p style="margin-top:0.25rem; opacity:0.9;">Choose a cover look for the public site. Selection auto-saves.</p>
+      <label for="facadeSelect" style="display:block; margin:0.5rem 0;">Choose facade:</label>
+      <select id="facadeSelect" style="min-width: 260px; padding:0.4rem;">
+        <option value="homework">1. Homework Tips</option>
+        <option value="inspired">2. Inspired By Orion (YouTube)</option>
+        <option value="random">3. Random Regular Site</option>
+        <option value="geometry">4. Geometry Assignment</option>
+        <option value="science8">5. Science (8th Grade)</option>
+        <option value="history8">6. History (8th Grade)</option>
+        <option value="pe8">7. P.E. (8th Grade)</option>
+        <option value="english8">8. English (8th Grade)</option>
+        <option value="bees">9. Bees</option>
+        <option value="croissants">10. Croissant Worship</option>
+      </select>
+      <div style="margin-top:0.75rem;">
+        <button class="game-button" id="applyFacadeBtn">Apply</button>
+        <button class="game-button" id="resetFacadeBtn" style="background:#777;">Reset to Homework</button>
+        <span id="facadeStatus" style="margin-left:0.5rem; color:#9be79b;"></span>
+      </div>
+    </div>
+
+    <!-- Secret Notes Section -->
+    <div id="secretNotes" style="margin-top: 2rem;">
+      <h3>📝 Your Secret Notes</h3>
+      <textarea id="notesArea" rows="6" style="width:100%; padding:1rem; font-size:1rem;"></textarea>
+      <br>
+      <button class="game-button" onclick="saveNotes()">Save Notes</button>
+      <p id="saveStatus" style="color:lightgreen; margin-top:0.5rem;"></p>
+    </div>
+  </div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  import { 
+    getAuth, 
+    signInWithPopup, 
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+  // --- 1. Config: declare ONCE ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyCovRNuHkX8UwRvDx6cqbCHBbEuaowuwtI",
+    authDomain: "the36files.firebaseapp.com", // <-- corrected to match Firebase default pattern
+    projectId: "the36files",
+    storageBucket: "the36files.firebasestorage.app",
+    messagingSenderId: "459589657087",
+    appId: "1:459589657087:web:8b4a410b1b59e48cc4c7ca",
+    measurementId: "G-SEMG9162V4"
+  };
+
+  // --- 2. Initialise Firebase services ---
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  // --- 3. Cached DOM refs ---
+  const notesArea = document.getElementById("notesArea");
+  const saveStatus = document.getElementById("saveStatus");
+  let currentUserId = null;
+
+  // --- 4. Sign in + load cloud notes ---
+  async function signInAndLoadNotes() {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      handleSignedInUser(result.user);
+    } catch (err) {
+      console.error("Sign-in or load error:", err);
+      saveStatus.textContent = "❌ Sign-in failed";
+    }
+  }
+
+  // Centralized handler for loading notes
+  async function handleSignedInUser(user) {
+    currentUserId = user.uid;
+    console.log(`Signed in as: ${user.displayName}`);
+    const noteRef = doc(db, "users", currentUserId);
+    const snap = await getDoc(noteRef);
+    notesArea.value = snap.exists() ? (snap.data().notes || "") : "";
+  }
+
+  // --- 5. Save to cloud ---
+  async function saveNotes() {
+    if (!currentUserId) {
+      saveStatus.textContent = "⚠️ Sign in first";
+      return;
+    }
+    try {
+      await setDoc(doc(db, "users", currentUserId), {
+        notes: notesArea.value,
+        timestamp: Date.now()
+      });
+      saveStatus.textContent = "✅ Notes saved to cloud!";
+      setTimeout(() => (saveStatus.textContent = ""), 2000);
+    } catch (err) {
+      console.error("Save error:", err);
+      saveStatus.textContent = "❌ Save failed";
+    }
+  }
+
+  // --- 6. Auto-detect existing login on page load ---
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      handleSignedInUser(user);
+    }
+  });
+
+  // --- 7. Hook into your lair opening ---
+  const originalShowSecret = window.showSecret;
+  window.showSecret = function () {
+    if (typeof originalShowSecret === "function") originalShowSecret();
+    signInAndLoadNotes();
+  };
+
+  // --- 8. Optional: Log out ---
+  async function logout() {
+    await signOut(auth);
+    currentUserId = null;
+    notesArea.value = "";
+    saveStatus.textContent = "👋 Signed out";
+  }
+
+  // --- 9. Expose functions globally for buttons ---
+  window.saveNotes = saveNotes;
+  window.logout = logout;
+</script>
+<script>
+    // Keep this function name for unlocking the Secret Lair
+    function showSecret() {
+      document.getElementById('secret').style.display = 'block';
+    }
+    function hideSecret() {
+      document.getElementById('secret').style.display = 'none';
+      hideGameContainers();
+    }
+    function showGame(id) {
+      hideGameContainers();
+      document.getElementById(id).style.display = 'block';
+      if (id === 'ticTacToe') initTicTacToe();
+      if (id === 'snake') startSnake();
+    }
+    function hideGameContainers() {
+      document.querySelectorAll('.game-container')
+        .forEach(div => div.style.display = 'none');
+    }
+
+    //////////////////////////
+    // TIC-TAC-TOE LOGIC
+    //////////////////////////
+    const boardEl = document.getElementById('board');
+    const msgEl = document.getElementById('tttMessage');
+    let boardState, currentPlayer, gameActive;
+
+    function initTicTacToe() {
+      boardState = Array(9).fill('');
+      currentPlayer = 'X';
+      gameActive = true;
+      boardEl.innerHTML = '';
+      msgEl.textContent = 'Current turn: X';
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.index = i;
+        cell.addEventListener('click', onCellClick);
+        boardEl.appendChild(cell);
+      }
+    }
+
+    function onCellClick(e) {
+      const idx = e.target.dataset.index;
+      if (boardState[idx] !== '' || !gameActive) return;
+      boardState[idx] = currentPlayer;
+      e.target.textContent = currentPlayer;
+      checkResult();
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      if (gameActive) msgEl.textContent = `Current turn: ${currentPlayer}`;
+    }
+
+    function checkResult() {
+      const combos = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      for (let combo of combos) {
+        const [a,b,c] = combo;
+        if (
+          boardState[a] &&
+          boardState[a] === boardState[b] &&
+          boardState[a] === boardState[c]
+        ) {
+          gameActive = false;
+          msgEl.textContent = `Player ${boardState[a]} wins!`;
+          return;
+        }
+      }
+      if (!boardState.includes('')) {
+        gameActive = false;
+        msgEl.textContent = `It's a draw!`;
+      }
+    }
+
+    function resetTicTacToe() {
+      initTicTacToe();
+    }
+
+    //////////////////////////
+    // SNAKE GAME LOGIC
+    //////////////////////////
+    const canvas = document.getElementById('snakeCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('scoreBoard');
+
+    let snake, food, dir, gameLoop, score, alive;
+
+    function startSnake() {
+      clearInterval(gameLoop);
+      // grid is 20x20; each cell 20px
+      snake = [{ x: 8, y: 8 }];
+      dir = { x: 1, y: 0 };
+      placeFood();
+      score = 0;
+      alive = true;
+      scoreEl.textContent = 'Score: 0';
+      scheduleLoop();
+      drawSnake();
+    }
+
+    function scheduleLoop() {
+      clearInterval(gameLoop);
+      gameLoop = setInterval(updateSnake, 100);
+    }
+
+    function placeFood() {
+      food = {
+        x: Math.floor(Math.random() * 20),
+        y: Math.floor(Math.random() * 20)
+      };
+    }
+
+    // Immediate, safe step on arrow key
+    document.addEventListener('keydown', e => {
+      if (!document.getElementById('snake').style.display || document.getElementById('snake').style.display === 'none') return;
+      if (!alive) return;
+
+      let d = null;
+      if (e.key === 'ArrowUp') d = { x: 0, y: -1 };
+      else if (e.key === 'ArrowDown') d = { x: 0, y: 1 };
+      else if (e.key === 'ArrowLeft') d = { x: -1, y: 0 };
+      else if (e.key === 'ArrowRight') d = { x: 1, y: 0 };
+
+      if (!d) return;
+
+      e.preventDefault();
+      attemptImmediateStep(d);
+    });
+
+    function attemptImmediateStep(newDir) {
+      if (!alive) return;
+
+      // Proposed head
+      let head = { x: snake[0].x + newDir.x, y: snake[0].y + newDir.y };
+
+      // Immortal: wrap walls, ignore self
+      if (window.SnakeCheats?.immortal) {
+        if (head.x < 0) head.x = 19;
+        if (head.x > 19) head.x = 0;
+        if (head.y < 0) head.y = 19;
+        if (head.y > 19) head.y = 0;
+        // Always move when immortal
+        performMove(head);
+        dir = newDir;
+        scheduleLoop(); // reset cadence after manual step
+        return;
+      }
+
+      // Normal: if this immediate move would crash, ignore it
+      const hitWall = head.x < 0 || head.x > 19 || head.y < 0 || head.y > 19;
+      const hitSelf = snake.some(seg => seg.x === head.x && seg.y === head.y);
+      if (hitWall || hitSelf) {
+        // Ignore dangerous input; do not change direction
+        return;
+      }
+
+      // Safe: perform move now and adopt direction
+      performMove(head);
+      dir = newDir;
+      scheduleLoop(); // keep tick feeling consistent
+    }
+
+    function updateSnake() {
+      if (!alive) return;
+
+      // Next head by current dir
+      let head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+      const hitWall = head.x < 0 || head.x > 19 || head.y < 0 || head.y > 19;
+      const hitSelf = snake.some(seg => seg.x === head.x && seg.y === head.y);
+
+      if (window.SnakeCheats?.immortal) {
+        // Wrap around on walls when immortal
+        if (hitWall) {
+          if (head.x < 0) head.x = 19;
+          if (head.x > 19) head.x = 0;
+          if (head.y < 0) head.y = 19;
+          if (head.y > 19) head.y = 0;
+        }
+        // Ignore self-collision while immortal
+      } else {
+        if (hitWall || hitSelf) {
+          clearInterval(gameLoop);
+          alive = false;
+          alert('Game Over! Your score: ' + score);
+          return;
+        }
+      }
+
+      performMove(head);
+    }
+
+    function performMove(head) {
+      snake.unshift(head);
+
+      // eat food?
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        scoreEl.textContent = 'Score: ' + score;
+        placeFood();
+      } else {
+        snake.pop();
+      }
+      drawSnake();
+    }
+
+    function drawSnake() {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, 400, 400);
+
+      // draw food
+      ctx.fillStyle = 'red';
+      ctx.fillRect(food.x*20, food.y*20, 20, 20);
+
+      // draw snake
+      ctx.fillStyle = 'lime';
+      snake.forEach(seg =>
+        ctx.fillRect(seg.x*20, seg.y*20, 20, 20)
+      );
+    }
+  </script>
+
+  <!-- New: Konami + typed triggers with per-word effects -->
+  <script>
+    (() => {
+      // Public cheats handle for Snake
+      window.SnakeCheats = window.SnakeCheats || {
+        immortal: false,
+        setImmortal(v) {
+          this.immortal = !!v;
+          document.dispatchEvent(new CustomEvent('snake:immortal-change', { detail: { immortal: this.immortal } }));
+          toast('Immortality ' + (this.immortal ? 'enabled' : 'disabled') + '.');
+        }
+      };
+
+      // Toast helper
+      function toast(msg, ms = 1600) {
+        const el = document.createElement('div');
+        el.className = 'secret-toast';
+        el.textContent = msg;
+        document.body.appendChild(el);
+        requestAnimationFrame(() => el.classList.add('show'));
+        setTimeout(() => {
+          el.classList.remove('show');
+          setTimeout(() => el.remove(), 220);
+        }, ms);
+      }
+
+      // Audio chime for "audio"
+      let audioCtx;
+      function playChime() {
+        try {
+          audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+          const t0 = audioCtx.currentTime + 0.02;
+          [523.25, 659.25].forEach((freq, i) => {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.type = 'sine';
+            o.frequency.value = freq;
+            g.gain.setValueAtTime(0, t0 + i*0.12);
+            g.gain.linearRampToValueAtTime(0.2, t0 + i*0.12 + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.0001, t0 + i*0.12 + 0.20);
+            o.connect(g).connect(audioCtx.destination);
+            o.start(t0 + i*0.12);
+            o.stop(t0 + i*0.12 + 0.22);
+          });
+        } catch {}
+      }
+
+      // Theme toggle for "style"
+      function toggleTheme() {
+        document.documentElement.classList.toggle('alt-theme');
+        toast(document.documentElement.classList.contains('alt-theme') ? 'Alt theme on.' : 'Alt theme off.');
+      }
+
+      // Immortality UI for "orion"
+      function ensureImmortalUI() {
+        let ui = document.querySelector('.secret-immortal-ui');
+        if (!ui) {
+          ui = document.createElement('div');
+          ui.className = 'secret-immortal-ui';
+          ui.innerHTML = `
+            <span>Snake cheats:</span>
+            <button type="button" class="immortal-toggle">Immortality: Off</button>
+            <button type="button" class="secondary hide-ui" title="Hide this control">Hide</button>
+          `;
+          document.body.appendChild(ui);
+
+          const btn = ui.querySelector('.immortal-toggle');
+          const hide = ui.querySelector('.hide-ui');
+
+          function sync() {
+            btn.textContent = 'Immortality: ' + (window.SnakeCheats.immortal ? 'On' : 'Off');
+            btn.style.background = window.SnakeCheats.immortal ? '#2db26d' : '#2d72d2';
+          }
+          sync();
+
+          btn.addEventListener('click', () => {
+            window.SnakeCheats.setImmortal(!window.SnakeCheats.immortal);
+            sync();
+          });
+
+          hide.addEventListener('click', () => {
+            ui.remove();
+            toast('Immortality control hidden.');
+          });
+
+          document.addEventListener('snake:immortal-change', sync);
+        } else {
+          if (!document.body.contains(ui)) document.body.appendChild(ui);
+          toast('Immortality control ready.');
+        }
+      }
+
+      // Inputs: Konami + typed triggers
+      const konami = [
+        'ArrowUp','ArrowUp','ArrowDown','ArrowDown',
+        'ArrowLeft','ArrowRight','ArrowLeft','ArrowRight',
+        'b','a'
+      ];
+      let konamiPos = 0;
+
+      const typedTriggers = ['orion', 'luca', '3.14159', '314159', 'audio', 'style'];
+      let typedBuffer = '';
+
+      window.addEventListener('keydown', (e) => {
+        // Ignore while typing in inputs
+        const tag = document.activeElement && document.activeElement.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || (document.activeElement && document.activeElement.isContentEditable)) return;
+
+        // Normalize key
+        const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+
+        // Konami detection
+        const expected = konami[konamiPos];
+        const expectedNorm = expected.length === 1 ? expected.toLowerCase() : expected;
+        if (key === expectedNorm) {
+          konamiPos++;
+          if (konamiPos === konami.length) {
+            konamiPos = 0;
+            typedBuffer = '';
+            // Unlock the secret lair
+            if (typeof window.showSecret === 'function') window.showSecret();
+            else showSecret();
+            return;
+          }
+        } else {
+          konamiPos = (key === konami[0]) ? 1 : 0;
+        }
+
+        // Typed triggers (letters, digits, dot)
+        if (key.length === 1 && /[a-z0-9.]/.test(key)) {
+          typedBuffer += key;
+          if (typedBuffer.length > 14) typedBuffer = typedBuffer.slice(-14);
+
+          const hit = typedTriggers.find(code => typedBuffer.endsWith(code));
+          if (hit) {
+            // Unlock the secret lair
+            if (typeof window.showSecret === 'function') window.showSecret();
+            else showSecret();
+
+            // Per-trigger effects
+            if (hit === 'audio') playChime();
+            if (hit === 'style') toggleTheme();
+            if (hit === 'orion') ensureImmortalUI();
+
+            // Reset after hit
+            typedBuffer = '';
+            konamiPos = 0;
+            return;
+          }
+        } else if (key === 'Escape') {
+          typedBuffer = '';
+        }
+      });
+    })();
+  </script>
+  <!-- Facade switcher script -->
+  <script>
+    (function(){
+      // Ensure header/main/footer exist and are easy to target
+      function getRegions() {
+        let header = document.querySelector('header');
+        let main = document.querySelector('main');
+        let footer = document.querySelector('footer');
+
+        if (!header) {
+          header = document.createElement('header');
+          document.body.insertBefore(header, document.body.firstChild);
+        }
+        if (!main) {
+          main = document.createElement('main');
+          document.body.appendChild(main);
+        }
+        if (!footer) {
+          footer = document.createElement('footer');
+          footer.style.cssText = 'background:#2c3e50;color:#fff;padding:1rem;text-align:center;';
+          document.body.appendChild(footer);
+        }
+        return { header, main, footer };
+      }
+
+      function buildArticles(articles) {
+        return articles.map(a => `
+          <article style="background:#fff;padding:1.25rem;margin-bottom:1.25rem;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.05);">
+            <h2 style="margin-top:0;color:#2c3e50;">${a.h2}</h2>
+            <p>${a.p}</p>
+          </article>
+        `).join('');
+      }
+
+      // 10 predetermined facades
+      const FACADES = {
+        homework: {
+          title: 'Homework Hero',
+          subtitle: 'Smart strategies for faster, better study sessions',
+          theme: { headerBg: '#4a90e2', headerText: '#fff', pageBg: '#fdfdfd', text: '#222', footerBg: '#2c3e50', footerText: '#fff' },
+          articles: [
+            { h2: 'Break Work Into Focused Sprints', p: 'Try 25 minutes on, 5 minutes off. Short bursts preserve energy and help you start quickly.' },
+            { h2: 'Create a Distraction‑Free Zone', p: 'Silence notifications, close extra tabs, and keep only what you need within reach.' },
+            { h2: 'Use Active Recall', p: 'Quiz yourself instead of re‑reading. Retrieval builds durable memory and reveals gaps.' }
+          ]
+        },
+        inspired: {
+          title: 'Inspired By Orion',
+          subtitle: 'Highlights, tips, and behind‑the‑scenes from the channel',
+          theme: { headerBg: '#171717', headerText: '#f5f5f5', pageBg: '#fafafa', text: '#222', footerBg: '#111', footerText: '#ccc' },
+          articles: [
+            { h2: 'Watch the Latest', p: 'Catch new uploads and community posts. Visit the channel: <a href="https://youtube.com/@inspiredbyorion" target="_blank" rel="noopener">youtube.com/@inspiredbyorion</a>.' },
+            { h2: 'How to Support', p: 'Subscribe, like, and share. Comment what you want to see next—your ideas guide the content.' },
+            { h2: 'Behind the Scenes', p: 'From brainstorming to editing, see how episodes go from sketch to screen.' }
+          ]
+        },
+        random: {
+          title: 'Civic Meadow',
+          subtitle: 'Local notes, weekend picks, and small finds',
+          theme: { headerBg: '#3c7d57', headerText: '#fff', pageBg: '#fcfcfc', text: '#222', footerBg: '#2b5a3e', footerText: '#e9f3ec' },
+          articles: [
+            { h2: 'Weekend Guide', p: 'Farmers market at 9am, pop‑up art on Maple Ave, and a sunset trail walk by the creek.' },
+            { h2: 'Coffee Corner', p: 'Three new roasts this month—light, medium, and a chocolatey dark. We liked the medium best.' }
+          ]
+        },
+        geometry: {
+          title: 'Geometry Module: Angles & Triangles',
+          subtitle: 'Unit 3: Triangle Properties and Similarity',
+          theme: { headerBg: '#254e70', headerText: '#eaf6ff', pageBg: '#f7fbff', text: '#203040', footerBg: '#1b3a57', footerText: '#d7eaff' },
+          articles: [
+            { h2: 'Angle Sum Theorem', p: 'The interior angles of a triangle add to 180°. Classify and solve for missing angles using complementary and supplementary pairs.' },
+            { h2: 'Similarity & Scale', p: 'Use AA similarity to relate side ratios. Apply scale factors to find unknown lengths in similar triangles.' },
+            { h2: 'Right Triangles', p: 'Pythagorean relationships help check triangle validity and solve for unknown sides.' }
+          ]
+        },
+        science8: {
+          title: 'Science 8: Systems in Motion',
+          subtitle: 'Energy, Forces, and Earth Systems',
+          theme: { headerBg: '#1c5d99', headerText: '#f0f7ff', pageBg: '#f6fbff', text: '#1a2c3f', footerBg: '#153f68', footerText: '#deefff' },
+          articles: [
+            { h2: 'Forces & Motion', p: 'Net force changes motion. Balanced forces mean constant velocity; unbalanced forces cause acceleration.' },
+            { h2: 'Energy Transfers', p: 'Energy changes form: kinetic, potential, thermal. Track energy through systems using inputs and outputs.' },
+            { h2: 'Earth Systems', p: 'Geosphere, hydrosphere, atmosphere, biosphere interact—feedbacks drive weathering, climate, and cycles.' }
+          ]
+        },
+        history8: {
+          title: 'History 8: Building a Nation',
+          subtitle: 'Foundations, Expansion, and Reform',
+          theme: { headerBg: '#7a3b2e', headerText: '#fff6e9', pageBg: '#fffbf7', text: '#3a2b26', footerBg: '#562a21', footerText: '#f8eadd' },
+          articles: [
+            { h2: 'Founding Documents', p: 'Key principles—liberty, republicanism, federalism—shape the Constitution and debates over power.' },
+            { h2: 'Westward Expansion', p: 'Migration, innovation, and conflict transformed the continent and its peoples.' },
+            { h2: 'Reform Movements', p: 'Abolition, suffrage, and labor movements pushed the nation toward a broader definition of rights.' }
+          ]
+        },
+        pe8: {
+          title: 'P.E. 8: Move Well, Live Well',
+          subtitle: 'Fitness, Skills, and Healthy Routines',
+          theme: { headerBg: '#0b8457', headerText: '#eafff1', pageBg: '#f7fffa', text: '#163a2b', footerBg: '#066241', footerText: '#d9ffea' },
+          articles: [
+            { h2: 'Warm‑Up Essentials', p: 'Dynamic stretches and light cardio prep muscles and reduce injury risk.' },
+            { h2: 'Skill Focus', p: 'Balance, agility, and coordination drills build a foundation for all sports.' },
+            { h2: 'Recovery Basics', p: 'Sleep, hydration, and mobility work are as important as training.' }
+          ]
+        },
+        english8: {
+          title: 'English 8: Read, Write, Analyze',
+          subtitle: 'Structure, Style, and Voice',
+          theme: { headerBg: '#34495e', headerText: '#f2f6fa', pageBg: '#fbfdff', text: '#243342', footerBg: '#2b3d4d', footerText: '#e6eef5' },
+          articles: [
+            { h2: 'Thesis to Conclusion', p: 'Craft clear claims, use evidence, and close with insights that answer “so what?”.' },
+            { h2: 'Literary Devices', p: 'Imagery, metaphor, and symbolism add layers of meaning—identify and explain their effect.' },
+            { h2: 'Revision Matters', p: 'Strong writing emerges through drafts: cut fluff, sharpen verbs, and vary sentence rhythm.' }
+          ]
+        },
+        bees: {
+          title: 'BeeBrief',
+          subtitle: 'Pollinators, hives, and the hum of life',
+          theme: { headerBg: '#f2b705', headerText: '#2b1f0b', pageBg: '#fffdf4', text: '#2b2212', footerBg: '#e0a804', footerText: '#2b1f0b' },
+          articles: [
+            { h2: 'Why Bees Matter', p: 'Pollination supports ecosystems and crops—bees help feed the world.' },
+            { h2: 'Inside the Hive', p: 'Queens, workers, drones—each role keeps the colony thriving.' },
+            { h2: 'Plant a Bee Buffet', p: 'Native flowers, water sources, and pesticide‑free yards invite pollinators.' }
+          ]
+        },
+        croissants: {
+          title: 'The Holy Order of the Crescent',
+          subtitle: 'In flaky layers we trust',
+          theme: { headerBg: '#d98b48', headerText: '#2b1d13', pageBg: '#fffaf5', text: '#2e241d', footerBg: '#b6733a', footerText: '#2b1d13' },
+          articles: [
+            { h2: 'Ritual of Lamination', p: 'Butter, fold, chill, repeat. A devotion to tender layers and golden sheen.' },
+            { h2: 'The Morning Benediction', p: 'Steam rises, crumbs fall: a simple ceremony of joy and crumbly grace.' },
+            { h2: 'Pilgrimage Guide', p: 'Seek the flake. Support your local bakery and honor the craft.' }
+          ]
+        }
+      };
+
+      function applyFacade(key, opts = { save: true }) {
+        const f = FACADES[key] || FACADES.homework;
+        const { header, main, footer } = getRegions();
+
+        // Theme
+        document.body.style.background = f.theme.pageBg;
+        document.body.style.color = f.theme.text;
+
+        // Header
+        header.style.background = f.theme.headerBg;
+        header.style.color = f.theme.headerText;
+        header.style.padding = '1.5rem';
+        header.style.textAlign = 'center';
+        header.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+        header.innerHTML = `
+          <h1 style="margin:0;font-size:2rem;">${f.title}</h1>
+          ${f.subtitle ? `<p style="margin:0.5rem 0 0;opacity:0.9;">${f.subtitle}</p>` : ''}
+        `;
+
+        // Main
+        main.style.maxWidth = '900px';
+        main.style.margin = 'auto';
+        main.style.padding = '2rem';
+        main.innerHTML = buildArticles(f.articles);
+
+        // Footer
+        footer.style.background = f.theme.footerBg;
+        footer.style.color = f.theme.footerText;
+        footer.style.padding = '1rem';
+        footer.style.textAlign = 'center';
+        footer.innerHTML = `<p style="margin:0;">&copy; ${new Date().getFullYear()} ${f.title}. All rights reserved.</p>`;
+
+        // Save preference
+        if (opts.save) localStorage.setItem('facadeKey', key);
+
+        // Update selector UI if present
+        const sel = document.getElementById('facadeSelect');
+        if (sel && sel.value !== key) sel.value = key;
+
+        // Status pulse
+        const status = document.getElementById('facadeStatus');
+        if (status) {
+          status.textContent = 'Applied!';
+          setTimeout(() => status.textContent = '', 1200);
+        }
+      }
+
+      // Wire up controls after DOM is ready
+      window.addEventListener('DOMContentLoaded', () => {
+        const saved = localStorage.getItem('facadeKey') || 'homework';
+        applyFacade(saved, { save: false });
+
+        const sel = document.getElementById('facadeSelect');
+        const applyBtn = document.getElementById('applyFacadeBtn');
+        const resetBtn = document.getElementById('resetFacadeBtn');
+
+        if (sel) sel.value = saved;
+        if (applyBtn) applyBtn.addEventListener('click', () => applyFacade(sel.value));
+        if (resetBtn) resetBtn.addEventListener('click', () => {
+          sel.value = 'homework';
+          applyFacade('homework');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
