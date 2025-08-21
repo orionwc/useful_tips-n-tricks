@@ -170,20 +170,27 @@
     </div>
   </div>
 <script type="module">
- import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-  import { 
-    getAuth, 
-    signInWithPopup, 
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  import {
+    getAuth,
+    signInWithPopup,
     GoogleAuthProvider,
     onAuthStateChanged,
-    signOut
+    signOut,
+    setPersistence,
+    browserLocalPersistence
   } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-  // --- 1. Config: declare ONCE ---
+  // --- 1. Firebase Config ---
   const firebaseConfig = {
     apiKey: "AIzaSyCovRNuHkX8UwRvDx6cqbCHBbEuaowuwtI",
-    authDomain: "the36files.firebaseapp.com", // <-- corrected to match Firebase default pattern
+    authDomain: "the36files.firebaseapp.com",
     projectId: "the36files",
     storageBucket: "the36files.firebasestorage.app",
     messagingSenderId: "459589657087",
@@ -191,30 +198,108 @@
     measurementId: "G-SEMG9162V4"
   };
 
-  // --- 2. Initialise Firebase services ---
+  // --- 2. Initialize Firebase ---
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
 
-  // --- 3. Cached DOM refs ---
+  // --- 3. DOM Elements ---
+  const signinButton = document.getElementById("signin");
+  const secretLair = document.getElementById("secret");
   const notesArea = document.getElementById("notesArea");
   const saveStatus = document.getElementById("saveStatus");
   let currentUserId = null;
 
-  // --- 4. Sign in + load cloud notes ---
-  async function signInAndLoadNotes() {
+  // --- 4. UI Helpers ---
+  function hideSecret() {
+    secretLair.style.display = "none";
+    if (signinButton) signinButton.style.display = "block";
+    notesArea.value = "";
+  }
+
+  function handleSignedInUser(user) {
+    if (signinButton) signinButton.style.display = "none";
+    secretLair.style.display = "block";
+    saveStatus.textContent = `✅ Welcome, ${user.displayName}`;
+    loadNotes(user.uid);
+  }
+
+  // --- 5. Firestore Access Check ---
+  async function isAllowedUser(email) {
+    const ref = doc(db, "allowedUsers", email);
+    const snapshot = await getDoc(ref);
+    return snapshot.exists();
+  }
+
+  // --- 6. Load Notes ---
+  async function loadNotes(uid) {
+    currentUserId = uid;
+    const noteRef = doc(db, "users", uid);
+    const snap = await getDoc(noteRef);
+    notesArea.value = snap.exists() ? (snap.data().notes || "") : "";
+  }
+
+  // --- 7. Save Notes ---
+  async function saveNotes() {
+    if (!currentUserId) {
+      saveStatus.textContent = "⚠️ Sign in first";
+      return;
+    }
     try {
-      const result = await signInWithPopup(auth, provider);
-      handleSignedInUser(result.user);
+      await setDoc(doc(db, "users", currentUserId), {
+        notes: notesArea.value,
+        timestamp: Date.now()
+      });
+      saveStatus.textContent = "✅ Notes saved to cloud!";
+      setTimeout(() => (saveStatus.textContent = ""), 2000);
     } catch (err) {
-      console.error("Sign-in or load error:", err);
-      saveStatus.textContent = "❌ Sign-in failed";
-      hideSecret()
+      console.error("Save error:", err);
+      saveStatus.textContent = "❌ Save failed";
     }
   }
-</script>
-<script>
+
+  // --- 8. Sign-In Flow ---
+  async function signInAndLoadNotes() {
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+      const result = await signInWithPopup(auth, provider);
+      const email = result.user?.email || "";
+
+      if (await isAllowedUser(email)) {
+        handleSignedInUser(result.user);
+      } else {
+        console.warn("Access denied for:", email);
+        saveStatus.textContent = "❌ Access denied";
+        hideSecret();
+        await signOut(auth);
+      }
+    } catch (err) {
+      console.error("Sign-in error:", err);
+      saveStatus.textContent = "❌ Sign-in failed";
+      hideSecret();
+    }
+  }
+
+  // --- 9. Auto-Login on Page Load ---
+  onAuthStateChanged(auth, async (user) => {
+    const email = user?.email || "";
+    if (user && await isAllowedUser(email)) {
+      handleSignedInUser(user);
+    } else {
+      hideSecret();
+      await signOut(auth);
+    }
+  });
+
+  // --- 10. Hook Up Sign-In Button ---
+  if (signinButton) {
+    signinButton.addEventListener("click", signInAndLoadNotes);
+  }
+
+  // --- 11. Expose Save Notes Globally ---
+  window.saveNotes = saveNotes;
+</script><script>
     // Keep this function name for unlocking the Secret Lair
     function showSecret() {
       document.getElementById('secret').style.display = 'block';
@@ -798,6 +883,7 @@
 </body>
 
 </html>
+
 
 
 
