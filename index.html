@@ -174,159 +174,117 @@ window.saveNotes = saveNotes;
     </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import {
-    getFirestore, doc, getDoc, setDoc
-  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-  import {
-    getAuth, signInWithPopup, GoogleAuthProvider,
-    onAuthStateChanged, signOut, setPersistence, browserLocalPersistence
-  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } 
+  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } 
+  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-  // --- Firebase Config ---
-  const firebaseConfig = {
-    apiKey: "AIzaSyCovRNuHkX8UwRvDx6cqbCHBbEuaowuwtI",
-    authDomain: "the36files.firebaseapp.com",
-    projectId: "the36files",
-    storageBucket: "the36files.firebasestorage.app",
-    messagingSenderId: "459589657087",
-    appId: "1:459589657087:web:8b4a410b1b59e48cc4c7ca",
-    measurementId: "G-SEMG9162V4"
-  };
+const firebaseConfig = { /* your config */ };
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
-  // --- Init Firebase ---
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-  const provider = new GoogleAuthProvider();
+const signinButton = document.getElementById("signin");
+const signoutButton = document.getElementById("signout");
+const secretLair = document.getElementById("secret");
+const notesArea = document.getElementById("notesArea");
+const saveStatus = document.getElementById("saveStatus");
+let currentUserId = null;
 
-  // --- DOM refs ---
-  const signinButton = document.getElementById("signin");
-  const signoutButton = document.getElementById("signout");
-  const secretLair = document.getElementById("secret");
-  const notesArea = document.getElementById("notesArea");
-  const saveStatus = document.getElementById("saveStatus");
-  let currentUserId = null;
+function hideSecret() {
+  secretLair.style.display = "none";
+  signinButton.style.display = "block";
+  notesArea.value = "";
+}
 
-  // --- UI Helpers ---
-  function hideSecret() {
-    secretLair.style.display = "none";
-    signinButton.style.display = "block";
-    notesArea.value = "";
-  }
-
-  function handleSignedInUser(user) {
-    signinButton.style.display = "none";
-    secretLair.style.display = "block";
-    saveStatus.textContent = `✅ Welcome, ${user.displayName}`;
-    loadNotes(user.uid);
-  }
-
-  // --- Access check ---
-  import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+function handleSignedInUser(user) {
+  signinButton.style.display = "none";
+  secretLair.style.display = "block";
+  saveStatus.textContent = `✅ Welcome, ${user.displayName}`;
+  loadNotes(user.uid);
+}
 
 async function isAllowedUser(email) {
+import { collection, query, where, getDocs } 
+  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
   const q = query(collection(db, "allowedUsers"), where("email", "==", email));
   const snapshot = await getDocs(q);
   return !snapshot.empty;
 }
 
+async function loadNotes(uid) {
+  currentUserId = uid;
+  const noteRef = doc(db, "users", uid);
+  const snap = await getDoc(noteRef);
+  notesArea.value = snap.exists() ? (snap.data().notes || "") : "";
+}
 
-  // --- Load notes ---
-  async function loadNotes(uid) {
-    currentUserId = uid;
-    const noteRef = doc(db, "users", uid);
-    const snap = await getDoc(noteRef);
-    notesArea.value = snap.exists() ? (snap.data().notes || "") : "";
+async function saveNotes() {
+  if (!currentUserId) {
+    saveStatus.textContent = "⚠️ Sign in first";
+    return;
   }
-
-  // --- Save notes ---
-  async function saveNotes() {
-    if (!currentUserId) {
-      saveStatus.textContent = "⚠️ Sign in first";
-      return;
-    }
-    try {
-      await setDoc(doc(db, "users", currentUserId), {
-        notes: notesArea.value,
-        timestamp: Date.now()
-      });
-      saveStatus.textContent = "✅ Notes saved!";
-      setTimeout(() => (saveStatus.textContent = ""), 2000);
-    } catch (err) {
-      console.error("Save error:", err);
-      saveStatus.textContent = "❌ Save failed";
-    }
+  try {
+    await setDoc(doc(db, "users", currentUserId), {
+      notes: notesArea.value,
+      timestamp: Date.now()
+    });
+    saveStatus.textContent = "✅ Notes saved!";
+    setTimeout(() => (saveStatus.textContent = ""), 2000);
+  } catch (err) {
+    console.error("Save error:", err);
+    saveStatus.textContent = "❌ Save failed";
   }
+}
 
-  // --- Sign in ---
-  async function signInAndLoadNotes() {
-    try {
-      await setPersistence(auth, browserLocalPersistence);
-      const result = await signInWithPopup(auth, provider);
-      const email = result.user?.email || "";
-
-      if (await isAllowedUser(email)) {
-        handleSignedInUser(result.user);
-      } else {
-        saveStatus.textContent = "❌ Access denied";
-        hideSecret();
-        await signOut(auth);
-      }
-    } catch (err) {
-      console.error("Sign-in error:", err);
-      saveStatus.textContent = "❌ Sign-in failed";
-      hideSecret();
-    }
-  }
-
-  // --- Sign out ---
-  async function signOutUser() {
-    try {
-      await signOut(auth);
-      hideSecret();
-      saveStatus.textContent = "👋 Signed out";
-    } catch (err) {
-      console.error("Sign-out error:", err);
-      saveStatus.textContent = "❌ Sign-out failed";
-    }
-  }
-
-  // --- Auth state change ---
-  onAuthStateChanged(auth, async (user) => {
-    const email = user?.email || "";
-    if (user && await isAllowedUser(email)) {
-      handleSignedInUser(user);
+async function signInAndLoadNotes() {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    const result = await signInWithPopup(auth, provider);
+    const email = result.user?.email || "";
+    if (await isAllowedUser(email)) {
+      handleSignedInUser(result.user);
     } else {
+      saveStatus.textContent = "❌ Access denied";
       hideSecret();
+      await signOut(auth);
     }
-  });
+  } catch (err) {
+    console.error("Sign-in error:", err);
+    saveStatus.textContent = "❌ Sign-in failed";
+    hideSecret();
+  }
+}
 
-  // --- Hook up buttons ---
-  signinButton.addEventListener("click", signInAndLoadNotes);
-  signoutButton.addEventListener("click", signOutUser);
+async function signOutUser() {
+  try {
+    await signOut(auth);
+    hideSecret();
+    saveStatus.textContent = "👋 Signed out";
+  } catch (err) {
+    console.error("Sign-out error:", err);
+    saveStatus.textContent = "❌ Sign-out failed";
+  }
+}
 
-  // --- Make saveNotes callable from HTML ---
-  window.saveNotes = saveNotes;
+onAuthStateChanged(auth, async (user) => {
+  const email = user?.email || "";
+  if (user && await isAllowedUser(email)) {
+    handleSignedInUser(user);
+  } else {
+    hideSecret();
+  }
+});
+
+signinButton.addEventListener("click", signInAndLoadNotes);
+signoutButton.addEventListener("click", signOutUser);
+
+// expose for inline HTML
+window.saveNotes = saveNotes;
+window.signOutUser = signOutUser;
 </script><script>
-    // Keep this function name for unlocking the Secret Lair
-    function showSecret() {
-      document.getElementById('secret').style.display = 'block';
-    }
-    function hideSecret() {
-      document.getElementById('secret').style.display = 'none';
-      hideGameContainers();
-    }
-    function showGame(id) {
-      hideGameContainers();
-      document.getElementById(id).style.display = 'block';
-      if (id === 'ticTacToe') initTicTacToe();
-      if (id === 'snake') startSnake();
-    }
-    function hideGameContainers() {
-      document.querySelectorAll('.game-container')
-        .forEach(div => div.style.display = 'none');
-    }
 
     //////////////////////////
     // TIC-TAC-TOE LOGIC
@@ -892,6 +850,7 @@ async function isAllowedUser(email) {
 </body>
 
 </html>
+
 
 
 
