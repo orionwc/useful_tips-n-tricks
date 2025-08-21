@@ -210,6 +210,7 @@
     } catch (err) {
       console.error("Sign-in or load error:", err);
       saveStatus.textContent = "❌ Sign-in failed";
+      hideSecret()
     }
   }
 
@@ -237,8 +238,7 @@
       setTimeout(() => (saveStatus.textContent = ""), 2000);
     } catch (err) {
       console.error("Save error:", err);
-      saveStatus.textContent = "❌ Save failed";
-      hideSecret()
+      saveStatus.textContent = "❌ Save failed"
     }
   }
 
@@ -852,4 +852,5 @@
 </body>
 
 </html>
+
 
