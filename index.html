@@ -180,35 +180,45 @@ import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs }
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } 
   from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-const firebaseConfig = { /* your config */ };
+// --- Firebase Config ---
+const firebaseConfig = {
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_BUCKET",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID"
+};
+
+// --- Init Firebase ---
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-const signinButton = document.getElementById("signin");
-const signoutButton = document.getElementById("signout");
-const secretLair = document.getElementById("secret");
-const notesArea = document.getElementById("notesArea");
-const saveStatus = document.getElementById("saveStatus");
 let currentUserId = null;
 
+// --- Core functions ---
 function hideSecret() {
-  secretLair.style.display = "none";
-  signinButton.style.display = "block";
-  notesArea.value = "";
+  document.getElementById("secret").style.display = "none";
+  const signinButton = document.getElementById("signin");
+  if (signinButton) signinButton.style.display = "block";
+  const notesArea = document.getElementById("notesArea");
+  if (notesArea) notesArea.value = "";
 }
 
 function handleSignedInUser(user) {
-  signinButton.style.display = "none";
-  secretLair.style.display = "block";
-  saveStatus.textContent = `✅ Welcome, ${user.displayName}`;
+  const signinButton = document.getElementById("signin");
+  const secretLair = document.getElementById("secret");
+  const saveStatus = document.getElementById("saveStatus");
+  if (signinButton) signinButton.style.display = "none";
+  if (secretLair) secretLair.style.display = "block";
+  if (saveStatus) saveStatus.textContent = `✅ Welcome, ${user.displayName}`;
   loadNotes(user.uid);
 }
 
 async function isAllowedUser(email) {
-import { collection, query, where, getDocs } 
-  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
   const q = query(collection(db, "allowedUsers"), where("email", "==", email));
   const snapshot = await getDocs(q);
   return !snapshot.empty;
@@ -218,28 +228,33 @@ async function loadNotes(uid) {
   currentUserId = uid;
   const noteRef = doc(db, "users", uid);
   const snap = await getDoc(noteRef);
-  notesArea.value = snap.exists() ? (snap.data().notes || "") : "";
+  const notesArea = document.getElementById("notesArea");
+  if (notesArea) notesArea.value = snap.exists() ? (snap.data().notes || "") : "";
 }
 
 async function saveNotes() {
+  const saveStatus = document.getElementById("saveStatus");
   if (!currentUserId) {
-    saveStatus.textContent = "⚠️ Sign in first";
+    if (saveStatus) saveStatus.textContent = "⚠️ Sign in first";
     return;
   }
   try {
     await setDoc(doc(db, "users", currentUserId), {
-      notes: notesArea.value,
+      notes: document.getElementById("notesArea").value,
       timestamp: Date.now()
     });
-    saveStatus.textContent = "✅ Notes saved!";
-    setTimeout(() => (saveStatus.textContent = ""), 2000);
+    if (saveStatus) {
+      saveStatus.textContent = "✅ Notes saved!";
+      setTimeout(() => (saveStatus.textContent = ""), 2000);
+    }
   } catch (err) {
     console.error("Save error:", err);
-    saveStatus.textContent = "❌ Save failed";
+    if (saveStatus) saveStatus.textContent = "❌ Save failed";
   }
 }
 
 async function signInAndLoadNotes() {
+  const saveStatus = document.getElementById("saveStatus");
   try {
     await setPersistence(auth, browserLocalPersistence);
     const result = await signInWithPopup(auth, provider);
@@ -247,28 +262,30 @@ async function signInAndLoadNotes() {
     if (await isAllowedUser(email)) {
       handleSignedInUser(result.user);
     } else {
-      saveStatus.textContent = "❌ Access denied";
+      if (saveStatus) saveStatus.textContent = "❌ Access denied";
       hideSecret();
       await signOut(auth);
     }
   } catch (err) {
     console.error("Sign-in error:", err);
-    saveStatus.textContent = "❌ Sign-in failed";
+    if (saveStatus) saveStatus.textContent = "❌ Sign-in failed";
     hideSecret();
   }
 }
 
 async function signOutUser() {
+  const saveStatus = document.getElementById("saveStatus");
   try {
     await signOut(auth);
     hideSecret();
-    saveStatus.textContent = "👋 Signed out";
+    if (saveStatus) saveStatus.textContent = "👋 Signed out";
   } catch (err) {
     console.error("Sign-out error:", err);
-    saveStatus.textContent = "❌ Sign-out failed";
+    if (saveStatus) saveStatus.textContent = "❌ Sign-out failed";
   }
 }
 
+// --- Auth state change ---
 onAuthStateChanged(auth, async (user) => {
   const email = user?.email || "";
   if (user && await isAllowedUser(email)) {
@@ -278,10 +295,15 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-signinButton.addEventListener("click", signInAndLoadNotes);
-signoutButton.addEventListener("click", signOutUser);
+// --- Wait for DOM before binding ---
+document.addEventListener("DOMContentLoaded", () => {
+  const signinButton = document.getElementById("signin");
+  const signoutButton = document.getElementById("signout");
+  if (signinButton) signinButton.addEventListener("click", signInAndLoadNotes);
+  if (signoutButton) signoutButton.addEventListener("click", signOutUser);
+});
 
-// expose for inline HTML
+// --- Expose for inline HTML ---
 window.saveNotes = saveNotes;
 window.signOutUser = signOutUser;
 </script><script>
@@ -850,6 +872,7 @@ window.signOutUser = signOutUser;
 </body>
 
 </html>
+
 
 
 
