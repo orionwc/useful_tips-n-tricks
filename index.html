@@ -108,27 +108,45 @@
       font: 14px/1.2 system-ui, sans-serif; z-index: 2147483647; opacity: 0; transition: opacity .2s, transform .2s;
     }
     .secret-toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+    
+    /* Auth status styling */
+    #saveStatus {
+      font-weight: bold;
+      padding: 0.5rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+      text-align: center;
+      min-height: 1.5rem;
+    }
+    
+    #saveStatus:empty {
+      display: none;
+    }
+    
+    /* Access denied styling */
+    #saveStatus.access-denied {
+      background: #ffebee;
+      color: #c62828;
+      border: 2px solid #f44336;
+    }
+    
+    /* Button hover effects */
+    .game-button:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+      transition: all 0.2s ease;
+    }
   </style>
 </head>
 <body>
-<!-- Secret lair (shows when logged in) -->
-<div id="secret" style="display:none;">
-  <button class="close-btn" onclick="hideSecret()">✕ Close Secret Lair</button>
-  <h2>🎮 Secret Lair Unlocked!</h2>
-  <p>Choose:</p>
-  <button class="game-button" onclick="showGame('ticTacToe')">Tic-Tac-Toe</button>
-  <button class="game-button" onclick="showGame('snake')">Snake Game</button>
-  <button class="game-button" onclick="showGame('facade')">Site Facade</button>
-
-  <!-- Game containers... -->
-  <!-- Notes Section -->
-  <h3>📝 Your Secret Notes</h3>
-  <textarea id="notesArea" rows="6" style="width:100%; padding:1rem; font-size:1rem;" placeholder="Type your notes here..."></textarea>
-  <br>
-  <button class="game-button" onclick="saveNotes()">Save Notes</button>
-  <button id="signout" class="game-button" style="background:#777;">Sign Out</button>
-  <p id="saveStatus" style="color:lightgreen; margin-top:0.5rem;"></p>
-</div>
+  <!-- SECRET LAIR -->
+  <div id="secret">
+    <button class="close-btn" onclick="hideSecret()">✕ Close Secret Lair</button>
+    <h2>🎮 Secret Lair Unlocked!</h2>
+    <p>Choose:</p>
+    <button class="game-button" onclick="showGame('ticTacToe')">Tic-Tac-Toe</button>
+    <button class="game-button" onclick="showGame('snake')">Snake Game</button>
+    <button class="game-button" onclick="showGame('facade')">Site Facade</button>
 
     <!-- Tic-Tac-Toe -->
 <div id="ticTacToe" class="game-container">
@@ -145,6 +163,7 @@
       <p id="scoreBoard">Score: 0</p>
       <button class="game-button" onclick="startSnake()">Restart Snake</button>
     </div>
+</script>
     <!-- Site Facade -->
     <div id="facade" class="game-container">
       <h3>Site Facade</h3>
@@ -169,11 +188,33 @@
       </div>
     </div>
 
+    <!-- Secret Notes Section -->
+    <div id="secretNotes" style="margin-top: 2rem; display: none;">
+      <h3>📝 Your Secret Notes</h3>
+      <textarea id="notesArea" rows="6" style="width:100%; padding:1rem; font-size:1rem;" placeholder="Sign in to view and edit your notes..."></textarea>
+      <br>
+      <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem;">
+        <button class="game-button" onclick="saveNotes()">Save Notes</button>
+        <button id="signin" class="game-button" style="background: #4285f4;">Sign In with Google</button>
+        <button id="signout" class="game-button" style="background: #f44336; display: none;">Sign Out</button>
+      </div>
+    </div>
+    
+    <!-- Status Message - Always Visible -->
+    <div id="saveStatus" style="color:lightgreen; margin-top:0.5rem; text-align: center; font-weight: bold; padding: 0.5rem; border-radius: 4px;"></div>
+    
+    <!-- Sign In Prompt -->
+    <div id="signinPrompt" style="margin-top: 2rem; text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 8px;">
+      <h3>🔐 Sign In Required</h3>
+      <p>To access your secret notes, please sign in with your Google account.</p>
+      <button id="signinPromptBtn" class="game-button" style="background: #4285f4;">Sign In with Google</button>
+    </div>
+  </div>
+</div>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import {
-    getFirestore, doc, getDoc, setDoc,
-    collection, query, where, getDocs
+    getFirestore, doc, getDoc, setDoc
   } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
   import {
     getAuth, signInWithPopup, GoogleAuthProvider,
@@ -197,52 +238,57 @@
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
 
-  // --- DOM Elements ---
-  const signinBtn   = document.getElementById("signin");
-  const signoutBtn  = document.getElementById("signout");
-  const secretLair  = document.getElementById("secret");
-  const notesArea   = document.getElementById("notesArea");
-  const saveStatus  = document.getElementById("saveStatus");
-  const saveBtn     = document.getElementById("saveBtn");
-
+  // --- DOM refs ---
+  const signinButton = document.getElementById("signin");
+  const signoutButton = document.getElementById("signout");
+  const secretNotes = document.getElementById("secretNotes");
+  const signinPrompt = document.getElementById("signinPrompt");
+  const signinPromptBtn = document.getElementById("signinPromptBtn");
+  const notesArea = document.getElementById("notesArea");
+  const saveStatus = document.getElementById("saveStatus");
   let currentUserId = null;
 
   // --- UI Helpers ---
-  function hideSecret() {
-    secretLair.style.display = "none";
-    if (signinBtn) signinBtn.style.display = "block";
+  function hideNotesSection() {
+    secretNotes.style.display = "none";
+    signinPrompt.style.display = "block";
+    signinButton.style.display = "inline-block";
+    signoutButton.style.display = "none";
     notesArea.value = "";
-    document.querySelectorAll(".game-container").forEach(div => div.style.display = "none");
+    // Don't clear saveStatus here - let the calling function handle it
   }
 
-  function showSecretFor(user) {
-    if (signinBtn) signinBtn.style.display = "none";
-    secretLair.style.display = "block";
-    save = `✅ Welcome, ${user.displayName}`;
-    loadNotesStatus.textContent(user.uid);
+  function handleSignedInUser(user) {
+    signinPrompt.style.display = "none";
+    signinButton.style.display = "none";
+    signoutButton.style.display = "inline-block";
+    secretNotes.style.display = "block";
+    saveStatus.textContent = `✅ Welcome, ${user.displayName}! You are now signed in.`;
+    loadNotes(user.uid);
   }
 
-(message, color = "") {
-    saveStatus  function setStatus.textContent = message saveStatus.style;
-    if (color).color = color;
-  }
-
-  // --- Firestore Helpers ---
+  // --- Access check ---
   async function isAllowedUser(email) {
-    const q = query(collection"), where("email(db, "allowedUsers", "==", email));
-    const snapshot = await getDocs(q);
-    return !snapshot.empty;
+    console.log("Checking if user is allowed:", email);
+    const ref = doc(db, "allowedUsers", email);
+    const snapshot = await getDoc(ref);
+    const isAllowed = snapshot.exists();
+    console.log("User allowed:", isAllowed);
+    return isAllowed;
   }
 
+  // --- Load notes ---
   async function loadNotes(uid) {
     currentUserId = uid;
-    const snap = await getDoc(doc(db, "users", uid));
+    const noteRef = doc(db, "users", uid);
+    const snap = await getDoc(noteRef);
     notesArea.value = snap.exists() ? (snap.data().notes || "") : "";
   }
 
+  // --- Save notes ---
   async function saveNotes() {
     if (!currentUserId) {
-      setStatus("⚠️ Sign in first", "orange");
+      saveStatus.textContent = "⚠️ Sign in first";
       return;
     }
     try {
@@ -250,68 +296,146 @@
         notes: notesArea.value,
         timestamp: Date.now()
       });
-      setStatus("✅ Notes saved!", "lightgreen");
-      setTimeout(() => setStatus(""), 2000);
+      saveStatus.textContent = "✅ Notes saved!";
+      setTimeout(() => (saveStatus.textContent = ""), 2000);
     } catch (err) {
       console.error("Save error:", err);
-      setStatus("❌ Save failed", "red");
+      saveStatus.textContent = "❌ Save failed";
     }
   }
 
-  // --- Auth Actions ---
+  // --- Sign in with popup ---
   async function signInAndLoadNotes() {
     try {
+      saveStatus.textContent = "🔄 Opening Google sign-in popup...";
+      console.log("Starting popup sign-in process...");
+      console.log("Firebase config:", {
+        authDomain: auth.config.authDomain,
+        projectId: auth.config.projectId
+      });
+      
+      // Configure Google provider with custom parameters
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
+      // Set persistence first
       await setPersistence(auth, browserLocalPersistence);
-      const resultPopup(auth, provider = await signInWith);
-      const emailemail || "";
+      console.log("Persistence set successfully");
+      
+      console.log("Attempting popup sign-in...");
+      console.log("Current URL:", window.location.href);
+      const result = await signInWithPopup(auth, provider);
+      console.log("Popup sign-in successful:", result.user?.email);
+      
+      const email = result.user?.email || "";
 
-      = result.user?. if (await isAllowedUser(email)) {
-        showSecretFor(result.user);
+      if (await isAllowedUser(email)) {
+        console.log("User authorized:", email);
+        handleSignedInUser(result.user);
       } else {
-        setStatus("❌ Access denied", "red");
-        hideSecret();
+        console.log("User NOT authorized:", email);
+        saveStatus.textContent = "🚫 ACCESS DENIED - This email is not authorized to view notes";
+        saveStatus.className = "access-denied";
+        hideNotesSection();
         await signOut(auth);
+        // Show access denied message for longer
+        setTimeout(() => {
+          if (saveStatus.textContent.includes("ACCESS DENIED")) {
+            saveStatus.textContent = "❌ Access denied - This email is not authorized";
+            saveStatus.className = "";
+          }
+        }, 5000);
       }
     } catch (err) {
       console.error("Sign-in error:", err);
-      setStatus("❌ Sign-in failed", "red");
-      hideSecret();
+      console.error("Error code:", err.code);
+      console.error("Error message:", err.message);
+      
+      if (err.code === 'auth/popup-closed-by-user') {
+        saveStatus.textContent = "❌ Sign-in window was closed. Try the 'Sign In with Redirect' button instead.";
+      } else if (err.code === 'auth/popup-blocked') {
+        saveStatus.textContent = "❌ Popup was blocked. Try the 'Sign In with Redirect' button instead.";
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        saveStatus.textContent = "❌ Sign-in was cancelled. Please try again.";
+      } else if (err.code === 'auth/unauthorized-domain') {
+        saveStatus.textContent = "❌ This domain is not authorized for Google sign-in. Please contact the administrator.";
+      } else {
+        saveStatus.textContent = `❌ Sign-in failed: ${err.message}. Please try again.`;
+      }
+      hideNotesSection();
     }
   }
 
+
+
+  // --- Sign out ---
   async function signOutUser() {
     try {
+      saveStatus.textContent = "🔄 Signing out...";
       await signOut(auth);
-      hideSecret();
-      setStatus("👋 Signed out", "gray");
+      hideNotesSection();
+      saveStatus.textContent = "👋 Successfully signed out! Notes are now hidden.";
+      setTimeout(() => {
+        if (saveStatus.textContent.includes("Successfully signed out")) {
+          saveStatus.textContent = "";
+        }
+      }, 3000);
     } catch (err) {
       console.error("Sign-out error:", err);
-      setStatus("❌ Sign-out failed", "red");
+      saveStatus.textContent = "❌ Sign-out failed - Please try again";
     }
   }
 
-  // --- Auth State Listener ---
-  onAuthStateChanged(auth, async (user email = user?.email || "";
+
+
+  // --- Auth state change ---
+  onAuthStateChanged(auth, async (user) => {
+    const email = user?.email || "";
     if (user && await isAllowedUser(email)) {
-      showSecretFor(user);
+      handleSignedInUser(user);
+    } else if (user) {
+      // User is signed in but not authorized
+      saveStatus.textContent = "🚫 ACCESS DENIED - This email is not authorized to view notes";
+      saveStatus.className = "access-denied";
+      hideNotesSection();
+      await signOut(auth);
     } else {
-      hideSecret();
+      hideNotesSection();
     }
   });
 
-  // --- Event Listeners ---
-  document.addEventListener("DOMContentLoaded", () => {
-    if (signinBtn)  signinBtn.addEventListener("click", signInAndLoadNotes);
-   ) => {
-    const if (signoutBtn) signoutBtn.addEventListener("click", signOutUser);
-    if (saveBtn)    saveBtn.addEventListener("click", saveNotes);
-  });
+  // --- Hook up buttons ---
+  signinButton.addEventListener("click", signInAndLoadNotes);
+  signinPromptBtn.addEventListener("click", signInAndLoadNotes);
+  signoutButton.addEventListener("click", signOutUser);
 
-  // --- Expose for inline HTML ---
-  window.saveNotes   = saveNotes;
-  window.hideSecret  = hideSecret;
-  window.signOutUser = signOutUser;
+  // --- Initialize page state ---
+  hideNotesSection();
+  
+
+
+  // --- Make saveNotes callable from HTML ---
+  window.saveNotes = saveNotes;
 </script><script>
+    // Keep this function name for unlocking the Secret Lair
+    function showSecret() {
+      document.getElementById('secret').style.display = 'block';
+    }
+    function hideSecret() {
+      document.getElementById('secret').style.display = 'none';
+      hideGameContainers();
+    }
+    function showGame(id) {
+      hideGameContainers();
+      document.getElementById(id).style.display = 'block';
+      if (id === 'ticTacToe') initTicTacToe();
+      if (id === 'snake') startSnake();
+    }
+    function hideGameContainers() {
+      document.querySelectorAll('.game-container')
+        .forEach(div => div.style.display = 'none');
+    }
 
     //////////////////////////
     // TIC-TAC-TOE LOGIC
@@ -808,7 +932,6 @@
           ]
         }
       };
-
       function applyFacade(key, opts = { save: true }) {
         const f = FACADES[key] || FACADES.homework;
         const { header, main, footer } = getRegions();
@@ -855,7 +978,6 @@
           setTimeout(() => status.textContent = '', 1200);
         }
       }
-
       // Wire up controls after DOM is ready
       window.addEventListener('DOMContentLoaded', () => {
         const saved = localStorage.getItem('facadeKey') || 'homework';
@@ -875,24 +997,4 @@
     })();
   </script>
 </body>
-
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
